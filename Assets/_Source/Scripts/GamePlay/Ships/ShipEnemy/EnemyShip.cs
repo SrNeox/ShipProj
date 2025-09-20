@@ -34,13 +34,16 @@ public class EnemyShip : MonoBehaviour
     [Header("Reward")]
     [SerializeField] private int _score;
 
+    [Header("Arc Shot Settings")]
+    [SerializeField] private float _arcShotChance = 0.3f; // Вероятность выстрела по дуге
+
     private EnemyMover _mover;
     private EnemyShoot _shoot;
     private SearchPlayer _searchPlayer;
     private Health _health;
     private AudioSource _audioSource;
     private Awardee _reward;
-    
+
     public Transform[] MovePoints { get; private set; }
 
     public void RestoreHealth() => _valueHealth = _maxHealth;
@@ -70,7 +73,7 @@ public class EnemyShip : MonoBehaviour
         AttributeInjector.Inject(_shoot, _container);
 
         _mover.Init(_speed, MovePoints);
-        _shoot.Init(_fireRate, _firePoints, _speedBullet, _damage, _audioSource);
+        _shoot.Init(_fireRate, _firePoints, _speedBullet, _damage, _audioSource, _arcShotChance);
         _searchPlayer.Init(_layerMask);
         _health.Init(_valueHealth, _maxHealth);
         _reward.Init(_score);

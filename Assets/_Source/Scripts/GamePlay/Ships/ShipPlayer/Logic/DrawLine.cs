@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine.EventSystems;
 using UnityEngine;
+using System;
 
 [RequireComponent(typeof(InputPlayer))]
 public class DrawLine : MonoBehaviour
@@ -10,9 +11,10 @@ public class DrawLine : MonoBehaviour
     private InputPlayer _inputPlayer;
 
     private bool _isDrawing = false;
-    private bool _isOverDrawZone = false; // ‘лаг нахождени€ над зоной рисовани€
+    private bool _isOverDrawZone = false;
 
     public List<Vector3> MousePositionList { get; private set; }
+    public event Action OnLineDrawn;
 
     private void Awake()
     {
@@ -36,7 +38,7 @@ public class DrawLine : MonoBehaviour
     private void Update()
     {
         CheckDrawLine();
-        CheckDrawZone(); // ѕровер€ем нахождение над зоной рисовани€
+        CheckDrawZone();
     }
 
     public void Init(LayerMask layerMask)
@@ -44,7 +46,6 @@ public class DrawLine : MonoBehaviour
         _planeLayerMask = layerMask;
     }
 
-    // ѕроверка нахождени€ над зоной рисовани€
     private void CheckDrawZone()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -53,7 +54,7 @@ public class DrawLine : MonoBehaviour
 
     private void DrawVector()
     {
-        if (!_isOverDrawZone) return; // –исуем только над специальной зоной
+        if (!_isOverDrawZone) return;
 
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, _planeLayerMask))
@@ -80,7 +81,6 @@ public class DrawLine : MonoBehaviour
     {
         if (_inputPlayer.Draw())
         {
-            // Ќачинаем рисование только если находимс€ над зоной
             if (!_isDrawing && _isOverDrawZone)
             {
                 Clear();
@@ -92,9 +92,14 @@ public class DrawLine : MonoBehaviour
                 DrawVector();
             }
         }
-        else
+        else if (_isDrawing) 
         {
             _isDrawing = false;
+           
+            if (MousePositionList.Count > 3)
+            {
+                OnLineDrawn?.Invoke();
+            }
         }
     }
 }

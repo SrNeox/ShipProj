@@ -1,13 +1,9 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
 public class SearchPlayer : MonoBehaviour
 {
     private LayerMask _player;
-    private Vector3 _boxSize = new(30,5,30);
+    private Vector3 _boxSize = new(30, 5, 30);
 
     public Transform _playerPosition { get; private set; }
 
@@ -34,6 +30,21 @@ public class SearchPlayer : MonoBehaviour
         }
 
         return null;
+    }
+
+    // Новый метод для получения случайной точки в зоне игрока
+    public Vector3 GetRandomPointInDetectionZone()
+    {
+        if (_playerPosition == null) return transform.position + transform.forward * 10f;
+
+        Vector3 playerPos = _playerPosition.position;
+        Vector3 randomPoint = playerPos + new Vector3(
+            Random.Range(-_boxSize.x / 2, _boxSize.x / 2),
+            0,
+            Random.Range(-_boxSize.z / 2, _boxSize.z / 2)
+        );
+        
+        return randomPoint;
     }
 
     private void OnDrawGizmos()

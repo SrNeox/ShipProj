@@ -8,7 +8,6 @@ public class Shoot : MonoBehaviour
 {
     private PoolBullet _pool;
     private Transform _firePoint;
-    private InputPlayer _inputPlayer;
     private DrawLine _drawLine;
     private AudioSource _audioSource;
 
@@ -22,8 +21,8 @@ public class Shoot : MonoBehaviour
 
     private void Awake()
     {
-        _inputPlayer = GetComponent<InputPlayer>();
         _drawLine = GetComponent<DrawLine>();
+        _drawLine.OnLineDrawn += ShooBulletUI; 
 
         _pool = FindObjectOfType<PoolBullet>();
 
@@ -33,9 +32,9 @@ public class Shoot : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void OnDestroy()
     {
-        ShootBullet();
+        _drawLine.OnLineDrawn -= ShooBulletUI;
     }
 
     public void Init(Transform firePoint, float delay, float damage, float speed, AudioSource audioSource)
@@ -45,14 +44,6 @@ public class Shoot : MonoBehaviour
         _speed = speed;
         _firePoint = firePoint;
         _audioSource = audioSource;
-    }
-
-    public void ShootBullet()
-    {
-        if (_inputPlayer.Shoot() && _canShoot && _drawLine.MousePositionList.Count > 3)
-        {
-            ShooBulletUI();
-        }
     }
 
     public void ShooBulletUI()
@@ -88,13 +79,11 @@ public class Shoot : MonoBehaviour
 
             if (_pool == null)
             {
-                Debug.LogError("Failed to find PoolBullet!");
                 return null;
             }
         }
 
         Bullet bullet = _pool.GetObject();
-
         bullet.Init(_firePoint, _damage, _speed);
 
         if (_audioSource != null)
@@ -114,7 +103,6 @@ public class Shoot : MonoBehaviour
 
         if (bullet == null)
         {
-            Debug.LogError("Bullet creation failed");
             _canShoot = true;
             yield break;
         }

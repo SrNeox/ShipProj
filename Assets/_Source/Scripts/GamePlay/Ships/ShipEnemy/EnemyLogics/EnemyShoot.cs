@@ -1,13 +1,10 @@
-using Reflex.Attributes;
-using Reflex.Core;
-using Reflex.Injectors;
 using UnityEngine;
+using System.Collections;
 
 [RequireComponent(typeof(SearchPlayer))]
 public class EnemyShoot : MonoBehaviour
 {
-    [Inject] private readonly PoolBullet _poolBullet;
-    [Inject] private readonly Container _container;
+    private PoolBullet _poolBullet;
 
     private Transform[] _firePoints;
     private AudioSource _audioSource;
@@ -16,6 +13,7 @@ public class EnemyShoot : MonoBehaviour
     private float _nextFireTime = 0f;
     private float _speedBullet;
     private float _damage;
+    private float _arcShotProbability = 0.3f;
 
     private SearchPlayer _searchPlayer;
 
@@ -23,49 +21,82 @@ public class EnemyShoot : MonoBehaviour
     {
         SetFirePoints();
         _searchPlayer = GetComponent<SearchPlayer>();
+        _poolBullet = FindObjectOfType<PoolBullet>();
     }
 
     private void Update()
     {
         if (_searchPlayer._playerPosition != null)
         {
-            RotateToPlyer();
+            RotateToPlayer();
 
             if (Time.time > _nextFireTime)
             {
-                Shoot();
+                DetermineShotType();
                 _nextFireTime = Time.time + 1f / _fireRate;
             }
         }
     }
 
-    public void Init(float fireRate, Transform[] firePoints, float speedBullet, float damage, AudioSource audioSource)
+    public void Init(float fireRate, Transform[] firePoints, float speedBullet, float damage, AudioSource audioSource, float arcShotChance = 0.3f)
     {
         _speedBullet = speedBullet;
         _damage = damage;
         _firePoints = firePoints;
         _fireRate = fireRate;
         _audioSource = audioSource;
+        _arcShotProbability = arcShotChance;
     }
 
-    private void RotateToPlyer()
+    private void RotateToPlayer()
     {
         Vector3 direction = _searchPlayer._playerPosition.transform.position - transform.position;
         Quaternion rotation = Quaternion.LookRotation(direction);
         transform.rotation = Quaternion.Lerp(transform.rotation, rotation, Time.deltaTime * 5);
     }
 
-    private void Shoot()
+    private void DetermineShotType()
+    {
+        bool isArcShot = Random.value < _arcShotProbability;
+
+        if (isArcShot && _searchPlayer._playerPosition != null)
+        {
+            StartCoroutine(PerformArcShot());
+        }
+        else
+        {
+            PerformDirectShot();
+        }
+    }
+
+    private void PerformDirectShot()
     {
         for (int i = 0; i < _firePoints.Length; i++)
             SpawnBullet(_firePoints[i]);
     }
 
+    private IEnumerator PerformArcShot()
+    {
+        Vector3 randomPointNearPlayer = _searchPlayer.GetRandomPointInDetectionZone();
+
+        // ∆дем перед выстрелом
+        yield return new WaitForSeconds(1f);
+
+        for (int i = 0; i < _firePoints.Length; i++)
+            SpawnArcBullet(_firePoints[i], randomPointNearPlayer);
+    }
+
     private void SpawnBullet(Transform firepoint)
     {
         Bullet bullet = _poolBullet.GetObject();
-        AttributeInjector.Inject(bullet, _container);
         bullet.Init(firepoint, _damage, _speedBullet);
+        _audioSource.Play();
+    }
+
+    private void SpawnArcBullet(Transform firepoint, Vector3 targetPosition)
+    {
+        Bullet bullet = _poolBullet.GetObject();
+        bullet.InitArc(firepoint, _damage, _speedBullet * 0.5f, targetPosition, 5f);
         _audioSource.Play();
     }
 
